@@ -1,4 +1,9 @@
-import { ADD_EXPENSE, REMOVE_EXPENSE, ADD_USER } from "../constants/actions";
+import {
+  ADD_EXPENSE,
+  REMOVE_EXPENSE,
+  ADD_USER,
+  REMOVE_USER
+} from "../constants/actions";
 
 const initialState = {};
 
@@ -24,6 +29,11 @@ const reducer = (state = initialState, action) => {
     case ADD_USER: {
       const { user } = action.payload;
       return { ...state, [user]: { data: [] } };
+    }
+
+    case REMOVE_USER: {
+      delete state[action.payload.user];
+      return { ...state };
     }
     default:
       return state;

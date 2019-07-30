@@ -1,16 +1,32 @@
 import React from "react";
 import { View } from "react-native";
-import { Button, ActivityIndicator, Card, Title } from "react-native-paper";
+import {
+  Button,
+  ActivityIndicator,
+  Card,
+  Title,
+  Switch,
+  Colors,
+  Text,
+  TouchableRipple
+} from "react-native-paper";
+import Icon from "react-native-vector-icons/AntDesign";
 import { connect } from "react-redux";
 import Container from "../../components/Container";
 import DateTimePicker from "react-native-modal-datetime-picker";
 import moment from "moment";
 import AddExpenditure from "./AddExpenditureModal";
-import { ADD_EXPENSE, ADD_USER, REMOVE_EXPENSE } from "../../constants/actions";
+import {
+  ADD_EXPENSE,
+  ADD_USER,
+  REMOVE_EXPENSE,
+  REMOVE_USER
+} from "../../constants/actions";
 import { getAuthToken } from "../../utils/asyncStorage";
 import uuidv1 from "uuid/v1";
 import { FlatList } from "react-native-gesture-handler";
 import { firstDay, lastDay } from "../../utils/dates";
+import CardLegend from "../../components/CardLegend";
 
 class Home extends React.Component {
   state = {
@@ -20,7 +36,10 @@ class Home extends React.Component {
     expenseLabel: "",
     expenseAmount: "",
     user: "",
-    isFetching: true
+    isFetching: true,
+    isSwitchOn: false,
+    selectedDate: moment().format("MM-DD-YYYY"),
+    monthPicker: false
   };
 
   componentDidMount() {
@@ -28,8 +47,12 @@ class Home extends React.Component {
   }
 
   addUser = async () => {
+    const { dispatch, expenditure } = this.props;
     const user = await getAuthToken();
-    this.props.dispatch({ type: ADD_USER, payload: { user } });
+    if (!expenditure[user]) {
+      dispatch({ type: ADD_USER, payload: { user } });
+    }
+
     this.setState({ user, isFetching: false });
   };
 
@@ -42,9 +65,22 @@ class Home extends React.Component {
   };
 
   handleDatePicked = date => {
-    this.setState({ date: moment(date).format("DD-MM-YYYY") });
+    this.setState({ date: moment(date).format("MM-DD-YYYY") });
     this.hideDateTimePicker();
     this.showModal();
+  };
+
+  showMonthPicker = () => {
+    this.setState({ monthPicker: true });
+  };
+
+  hideMonthPicker = () => {
+    this.setState({ monthPicker: false });
+  };
+
+  handleMonthPicker = date => {
+    this.setState({ selectedDate: moment(date).format("MM-DD-YYYY") });
+    this.hideMonthPicker();
   };
 
   showModal = () => this.setState({ visible: true });
@@ -81,11 +117,13 @@ class Home extends React.Component {
       onPress={() => this.removeExpense(item.id)}
       style={{ marginHorizontal: 16, marginVertical: 8 }}
     >
-      <Card.Title title={item.label} />
+      <Card.Title
+        title={`${moment(item.date).format("DD/MM/YYYY")} - ${item.label}`}
+      />
       <Card.Content>
         <Title>
-          {item.amount}
           {"RS."}
+          {item.amount}
         </Title>
       </Card.Content>
     </Card>
@@ -98,23 +136,45 @@ class Home extends React.Component {
 
   keyExtractor = item => `${item.id}`;
 
+  logOut = () => {
+    console.log("hey");
+    this.props.dispatch({
+      type: REMOVE_USER,
+      payload: { user: this.state.user }
+    });
+    this.props.navigation.navigate("Login");
+  };
+
   render() {
     const { expenditure } = this.props;
-    console.log(expenditure, firstDay, lastDay);
     let todaysExpense = "N/A";
     let monthlyExpense = "N/A";
-    let todaysList = [];
+    let list = [];
     if (this.state.user) {
-      todaysList = expenditure[this.state.user].data.filter(
-        item => item.date === moment().format("DD-MM-YYYY")
+      list = expenditure[this.state.user].data.filter(item =>
+        this.state.isSwitchOn
+          ? moment(moment(item.date).format()).isBetween(
+              firstDay(this.state.selectedDate),
+              lastDay(this.state.selectedDate)
+            )
+          : item.date === moment(this.state.selectedDate).format("MM-DD-YYYY")
       );
 
-      todaysExpense = todaysList
+      todaysExpense = expenditure[this.state.user].data
+        .filter(
+          item =>
+            item.date === moment(this.state.selectedDate).format("MM-DD-YYYY")
+        )
         .map(item => parseInt(item.amount))
         .reduce((accumulator, currentValue) => accumulator + currentValue, 0);
 
       monthlyExpense = expenditure[this.state.user].data
-        .filter(item => moment(item.date).isBetween(firstDay, lastDay))
+        .filter(item =>
+          moment(moment(item.date).format()).isBetween(
+            firstDay(this.state.selectedDate),
+            lastDay(this.state.selectedDate)
+          )
+        )
         .map(item => parseInt(item.amount))
         .reduce((accumulator, currentValue) => accumulator + currentValue, 0);
     }
@@ -126,9 +186,43 @@ class Home extends React.Component {
             <ActivityIndicator />
           ) : (
             <>
-              <Title style={{ color: "white", fontSize: 32, padding: 16 }}>
-                Hello {this.state.user},
-              </Title>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between"
+                }}
+              >
+                <Title
+                  style={{
+                    color: "white",
+                    fontSize: 32,
+                    paddingHorizontal: 16,
+                    paddingTop: 16
+                  }}
+                >
+                  Hello {this.state.user},
+                </Title>
+                <Icon
+                  name="logout"
+                  color={Colors.white}
+                  size={26}
+                  onPress={this.logOut}
+                  style={{ padding: 4 }}
+                />
+              </View>
+              <TouchableRipple onPress={this.showMonthPicker}>
+                <Text
+                  style={{
+                    color: "white",
+                    paddingHorizontal: 16,
+                    paddingTop: 4,
+                    paddingBottom: 16
+                  }}
+                >
+                  {moment(this.state.selectedDate).format("DD/MM/YYYY")}
+                </Text>
+              </TouchableRipple>
               <View
                 style={{
                   flexDirection: "row",
@@ -136,29 +230,44 @@ class Home extends React.Component {
                   justifyContent: "space-evenly"
                 }}
               >
-                <Card style={{ marginVertical: 8, width: "40%" }}>
-                  <Card.Title title="Today's" />
-                  <Card.Content>
-                    <Title>
-                      {todaysExpense}
-                      {"Rs."}
-                    </Title>
-                  </Card.Content>
-                </Card>
-                <Card style={{ marginVertical: 8, width: "40%" }}>
-                  <Card.Title title="This Month" />
-                  <Card.Content>
-                    <Title>
-                      {monthlyExpense} {"Rs."}
-                    </Title>
-                  </Card.Content>
-                </Card>
+                <CardLegend title="Today's" subTitle={`Rs.${todaysExpense}`} />
+                <CardLegend
+                  title="This Month"
+                  subTitle={`Rs.${monthlyExpense}`}
+                />
               </View>
-              <Title style={{ color: "white", fontSize: 16, padding: 16 }}>
-                Today's List
-              </Title>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between"
+                }}
+              >
+                <Title style={{ color: "white", fontSize: 16, padding: 16 }}>
+                  {this.state.isSwitchOn ? `Month List` : `Day List`}
+                </Title>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Title style={{ color: "white", fontSize: 16, padding: 16 }}>
+                    Day
+                  </Title>
+                  <Switch
+                    color={Colors.white}
+                    theme={{ colors: { primary: "#fff" } }}
+                    value={this.state.isSwitchOn}
+                    onValueChange={() => {
+                      this.setState(prevState => ({
+                        isSwitchOn: !prevState.isSwitchOn
+                      }));
+                    }}
+                  />
+                  <Title style={{ color: "white", fontSize: 16, padding: 16 }}>
+                    Month
+                  </Title>
+                </View>
+              </View>
+
               <FlatList
-                data={todaysList}
+                data={list}
                 renderItem={this.renderItem}
                 keyExtractor={this.keyExtractor}
               />
@@ -166,9 +275,16 @@ class Home extends React.Component {
           )}
         </View>
         <DateTimePicker
+          key={"01"}
           isVisible={this.state.isDateTimePickerVisible}
           onConfirm={this.handleDatePicked}
           onCancel={this.hideDateTimePicker}
+        />
+        <DateTimePicker
+          key="02"
+          isVisible={this.state.monthPicker}
+          onConfirm={this.handleMonthPicker}
+          onCancel={this.hideMonthPicker}
         />
         <AddExpenditure
           visible={this.state.visible}

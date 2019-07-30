@@ -26,6 +26,7 @@ class AddExpenditure extends React.Component {
               style={{ marginVertical: 6 }}
               label="How much?"
               mode="flat"
+              keyboardType="numeric"
               value={this.props.expenseAmount}
               onChangeText={this.props.onChangeExpenseAmount}
             />
