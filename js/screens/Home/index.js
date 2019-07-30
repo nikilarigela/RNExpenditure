@@ -230,9 +230,12 @@ class Home extends React.Component {
                   justifyContent: "space-evenly"
                 }}
               >
-                <CardLegend title="Today's" subTitle={`Rs.${todaysExpense}`} />
                 <CardLegend
-                  title="This Month"
+                  title={moment(this.state.selectedDate).format("DD/MM/YYYY")}
+                  subTitle={`Rs.${todaysExpense}`}
+                />
+                <CardLegend
+                  title="Month Total"
                   subTitle={`Rs.${monthlyExpense}`}
                 />
               </View>
