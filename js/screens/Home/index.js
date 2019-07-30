@@ -38,7 +38,7 @@ class Home extends React.Component {
     user: "",
     isFetching: true,
     isSwitchOn: false,
-    selectedDate: moment().format("MM-DD-YYYY"),
+    selectedDate: moment().format("YYYY-MM-DD"),
     monthPicker: false
   };
 
@@ -65,7 +65,7 @@ class Home extends React.Component {
   };
 
   handleDatePicked = date => {
-    this.setState({ date: moment(date).format("MM-DD-YYYY") });
+    this.setState({ date: moment(date).format("YYYY-MM-DD") });
     this.hideDateTimePicker();
     this.showModal();
   };
@@ -79,7 +79,7 @@ class Home extends React.Component {
   };
 
   handleMonthPicker = date => {
-    this.setState({ selectedDate: moment(date).format("MM-DD-YYYY") });
+    this.setState({ selectedDate: moment(date).format("YYYY-MM-DD") });
     this.hideMonthPicker();
   };
 
@@ -157,13 +157,13 @@ class Home extends React.Component {
               firstDay(this.state.selectedDate),
               lastDay(this.state.selectedDate)
             )
-          : item.date === moment(this.state.selectedDate).format("MM-DD-YYYY")
+          : item.date === moment(this.state.selectedDate).format("YYYY-MM-DD")
       );
 
       todaysExpense = expenditure[this.state.user].data
         .filter(
           item =>
-            item.date === moment(this.state.selectedDate).format("MM-DD-YYYY")
+            item.date === moment(this.state.selectedDate).format("YYYY-MM-DD")
         )
         .map(item => parseInt(item.amount))
         .reduce((accumulator, currentValue) => accumulator + currentValue, 0);
@@ -279,12 +279,14 @@ class Home extends React.Component {
         </View>
         <DateTimePicker
           key={"01"}
+          date={moment(this.state.selectedDate).toDate()}
           isVisible={this.state.isDateTimePickerVisible}
           onConfirm={this.handleDatePicked}
           onCancel={this.hideDateTimePicker}
         />
         <DateTimePicker
           key="02"
+          date={moment(this.state.selectedDate).toDate()}
           isVisible={this.state.monthPicker}
           onConfirm={this.handleMonthPicker}
           onCancel={this.hideMonthPicker}
