@@ -122,7 +122,7 @@ class Home extends React.Component {
       />
       <Card.Content>
         <Title>
-          {"RS."}
+          {"Rs."}
           {item.amount}
         </Title>
       </Card.Content>
@@ -145,6 +145,17 @@ class Home extends React.Component {
     this.props.navigation.navigate("Login");
   };
 
+  validateMonth = date => {
+    return (
+      moment(moment(date).format()).isBetween(
+        firstDay(this.state.selectedDate),
+        lastDay(this.state.selectedDate)
+      ) ||
+      moment(date).isSame(firstDay(this.state.selectedDate)) ||
+      moment(date).isSame(lastDay(this.state.selectedDate))
+    );
+  };
+
   render() {
     const { expenditure } = this.props;
     let todaysExpense = "N/A";
@@ -153,10 +164,7 @@ class Home extends React.Component {
     if (this.state.user) {
       list = expenditure[this.state.user].data.filter(item =>
         this.state.isSwitchOn
-          ? moment(moment(item.date).format()).isBetween(
-              firstDay(this.state.selectedDate),
-              lastDay(this.state.selectedDate)
-            )
+          ? this.validateMonth(item.date)
           : item.date === moment(this.state.selectedDate).format("YYYY-MM-DD")
       );
 
@@ -169,12 +177,7 @@ class Home extends React.Component {
         .reduce((accumulator, currentValue) => accumulator + currentValue, 0);
 
       monthlyExpense = expenditure[this.state.user].data
-        .filter(item =>
-          moment(moment(item.date).format()).isBetween(
-            firstDay(this.state.selectedDate),
-            lastDay(this.state.selectedDate)
-          )
-        )
+        .filter(item => this.validateMonth(item.date))
         .map(item => parseInt(item.amount))
         .reduce((accumulator, currentValue) => accumulator + currentValue, 0);
     }
